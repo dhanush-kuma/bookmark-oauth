@@ -150,7 +150,11 @@ export default function Home() {
             {(
               <div className="flex justify-between items-center">
                 <a
-                  href={b.url}
+                  href={
+                          b.url.startsWith("http://") || b.url.startsWith("https://")
+                            ? b.url
+                            : `https://${b.url}`
+                        }
                   target="_blank"
                   className="font-semibold hover:underline"
                 >
