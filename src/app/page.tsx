@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
 
 type Bookmark = {
   id: string
@@ -10,6 +11,7 @@ type Bookmark = {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
   const [title, setTitle] = useState('')
@@ -18,6 +20,20 @@ export default function Home() {
   const [editTitle, setEditTitle] = useState('')
   const [editUrl, setEditUrl] = useState('')
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser()
+
+      if (!data.user) {
+        router.push("/login")
+      } else {
+        setUser(data.user)
+      }
+    }
+
+    checkUser()
+  }, [])
 
   useEffect(() => {
     const getUser = async () => {
@@ -79,6 +95,7 @@ export default function Home() {
 
   const logout = async () => {
     await supabase.auth.signOut()
+    router.push("/login")
   }
 
   const addBookmark = async () => {
@@ -122,18 +139,7 @@ export default function Home() {
     )
   }
 
-  if (!user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <button
-          onClick={login}
-          className="bg-black text-white px-6 py-3 rounded"
-        >
-          Login with Google
-        </button>
-      </div>
-    )
-  }
+  if (!user) return null
 
   return (
     <div className="max-w-xl mx-auto mt-10 space-y-6">
