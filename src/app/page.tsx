@@ -16,17 +16,12 @@ export default function Home() {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
-  const [title, setTitle] = useState('')
-  const [url, setUrl] = useState('')
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
-  const [editUrl, setEditUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editData, setEditData] = useState<any>(null)
 
   useEffect(() => {
-    const checkUser = async () => {
+    const getUser = async () => {
       const { data } = await supabase.auth.getUser()
 
       if (!data.user) {
@@ -34,15 +29,7 @@ export default function Home() {
       } else {
         setUser(data.user)
       }
-    }
 
-    checkUser()
-  }, [])
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser()
-      setUser(data.user)
       setLoading(false)
     }
 
@@ -50,7 +37,11 @@ export default function Home() {
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setUser(session?.user ?? null)
+        if (!session) {
+          router.push("/login")
+        } else {
+          setUser(session.user)
+        }
       }
     )
 
@@ -108,9 +99,6 @@ export default function Home() {
     await supabase.from('bookmarks').insert([
       { title, url, user_id: user.id }
     ])
-
-    setTitle('')
-    setUrl('')
     fetchBookmarks()
   }
 
@@ -119,19 +107,13 @@ export default function Home() {
     fetchBookmarks()
   }
 
-  const startEditing = (bookmark: Bookmark) => {
-    setEditingId(bookmark.id)
-    setEditTitle(bookmark.title)
-    setEditUrl(bookmark.url)
-  }
 
   const updateBookmark = async (id: string, title: string, url: string) => {
     await supabase
       .from('bookmarks')
-      .update({ title: editTitle, url: editUrl })
+      .update({ title, url })
       .eq('id', id)
 
-    setEditingId(null)
     fetchBookmarks()
   }
 
@@ -165,34 +147,7 @@ export default function Home() {
             key={b.id}
             className="border p-3 rounded space-y-2"
           >
-            {editingId === b.id ? (
-              <div className="space-y-2">
-                <input
-                  className="border p-2 w-full rounded"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                />
-                <input
-                  className="border p-2 w-full rounded"
-                  value={editUrl}
-                  onChange={(e) => setEditUrl(e.target.value)}
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => updateBookmark(b.id)}
-                    className="bg-green-500 text-white px-3 py-1 rounded"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="text-gray-500"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
+            {(
               <div className="flex justify-between items-center">
                 <a
                   href={b.url}
