@@ -49,7 +49,28 @@ export default function Home() {
   }
 
   useEffect(() => {
-    if (user) fetchBookmarks()
+    if (!user) return
+
+    fetchBookmarks()
+
+    const channel = supabase
+      .channel('bookmarks-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookmarks'
+        },
+        () => {
+          fetchBookmarks()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [user])
 
   const login = async () => {
